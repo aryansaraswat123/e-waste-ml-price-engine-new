@@ -9,6 +9,7 @@ import math
 import numpy as np
 import pandas as pd
 import joblib
+from sklearn.isotonic import IsotonicRegression
 
 BASE = Path(__file__).resolve().parent
 MODELS_DIR = BASE / "models"
@@ -176,6 +177,15 @@ class MLPriceEngine:
         for ch in ["informal", "mandi", "authorized"]:
             vals = self._predict_channel(unit, ch, rows)
             predicted[ch] = float(np.median(vals))
+
+        # Independently trained models can cross (e.g. mandi > authorized).
+        # Project the three rates to their nearest non-decreasing values so
+        # direct MLPriceEngine users get the same channel guarantee as the wrapper.
+        channels = ["informal", "mandi", "authorized"]
+        ordered = IsotonicRegression(increasing=True).fit_transform(
+            np.arange(3), [predicted[ch] for ch in channels]
+        )
+        predicted.update(zip(channels, (float(x) for x in ordered)))
 
         recommended = predicted[channel]
         cm = self.meta["units"][unit]["channels"][channel]

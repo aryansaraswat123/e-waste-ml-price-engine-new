@@ -1,5 +1,10 @@
 # E-Waste ML Price Engine — Stress-Test Report
 
+This report records the original pre-fix run. The later ML adapter enforces
+informal <= mandi <= authorized before returning direct ML quotes. The known
+per-piece Delhi/Keypad Phone crossing is included in the compatibility test;
+the full original randomized stress suite has not been re-run here.
+
 ## Executive result
 - **Total checks:** 6,194
 - **Passed:** 6,158
@@ -44,4 +49,3 @@
 This is a **software robustness and inference stress test**. It is different from predictive
 accuracy validation. Predictive quality should still be reported with MAE/RMSE/R²/MAPE on
 a properly held-out real historical test set.
-

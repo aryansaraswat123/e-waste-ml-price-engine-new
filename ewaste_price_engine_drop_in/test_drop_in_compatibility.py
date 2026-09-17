@@ -105,6 +105,14 @@ cross_state = new._ml.quote(
 )
 assert cross_state["match_level"] == "state"
 
+# This exact material/city previously crossed: mandi exceeded authorized.
+ordered_piece = new._ml.quote(
+    category="MOBILE_TABLETS", subcategory="Keypad Phone - Complete",
+    state="Delhi NCR", city="Delhi", quantity=1, total_weight_kg=0,
+)
+assert (ordered_piece["informal_rate_inr"] <= ordered_piece["mandi_rate_inr"]
+        <= ordered_piece["authorized_rate_inr"])
+
 # The displayed total should agree with the displayed rate, even for large lots.
 large_quote = new.quote(QuoteRequest(
     category="PCB", state="Uttar Pradesh", city="Lucknow",
