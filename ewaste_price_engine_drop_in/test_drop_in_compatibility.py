@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+import math
 
 ROOT = Path(__file__).resolve().parent
 PE = ROOT / "price_engine"
@@ -87,6 +88,41 @@ integrated = recommend_price(
 assert list(integrated.keys()) == ["classification", "pricing"]
 assert integrated["classification"]["predicted_category"] == "PCB"
 assert integrated["classification"]["confidence"] == 0.91
+
+# Per-piece predictions must stay positive; older XGBoost versions silently
+# returned zero for the serialized per-piece models.
+piece_quote = new.quote(QuoteRequest(
+    category="MOBILE_TABLETS", state="Uttar Pradesh", city="Lucknow",
+    quantity=2, total_weight_kg=0,
+))
+assert piece_quote["unit"] == "per_piece"
+assert piece_quote["recommended_rate_inr"] > 0
+
+# A city seen in another state must not be labeled an exact location match.
+cross_state = new._ml.quote(
+    category="MOBILE_TABLETS", state="Maharashtra", city="Lucknow",
+    quantity=2, total_weight_kg=0,
+)
+assert cross_state["match_level"] == "state"
+
+# The displayed total should agree with the displayed rate, even for large lots.
+large_quote = new.quote(QuoteRequest(
+    category="PCB", state="Uttar Pradesh", city="Lucknow",
+    quantity=1, total_weight_kg=10000,
+))
+assert math.isclose(large_quote["estimated_value_inr"],
+                    round(10000 * large_quote["recommended_rate_inr"], 2), abs_tol=0.01)
+
+for invalid in (float("nan"), float("inf"), -float("inf")):
+    try:
+        new.quote(QuoteRequest(
+            category="PCB", state="Uttar Pradesh", city="Lucknow",
+            quantity=1, total_weight_kg=invalid,
+        ))
+    except ValueError:
+        pass
+    else:
+        raise AssertionError(f"Non-finite weight accepted: {invalid}")
 
 # Keys used by the existing camera_scan.py UI.
 for key in [

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional
@@ -114,6 +115,10 @@ class PriceEngine:
         return pairs
 
     def quote(self, request: QuoteRequest) -> Dict[str, object]:
+        for name in ("quantity", "total_weight_kg"):
+            value = getattr(request, name)
+            if not math.isfinite(float(value)):
+                raise ValueError(f"{name} must be a finite number")
         # Step 1: run the old contract/validation layer. This preserves:
         # aliases, supported inputs, unit rules, location fallback, metadata,
         # provenance fields, warnings structure, and all response keys.
@@ -202,9 +207,9 @@ class PriceEngine:
         out["market_rate_max_inr"] = round(max_rate, 2)
         out["range_method"] = "ml_holdout_residual_quantiles"
 
-        out["estimated_value_inr"] = round(multiplier * recommended, 2)
-        out["estimated_value_min_inr"] = round(multiplier * min_rate, 2)
-        out["estimated_value_max_inr"] = round(multiplier * max_rate, 2)
+        out["estimated_value_inr"] = round(multiplier * out["recommended_rate_inr"], 2)
+        out["estimated_value_min_inr"] = round(multiplier * out["market_rate_min_inr"], 2)
+        out["estimated_value_max_inr"] = round(multiplier * out["market_rate_max_inr"], 2)
 
         return out
 
@@ -212,7 +217,7 @@ class PriceEngine:
 def main() -> None:
     # Same CLI endpoint/arguments as the old engine.
     parser = argparse.ArgumentParser(description="Calculate an e-waste scrap price quote")
-    parser.add_argument("--dataset", default="data/price_dataset.csv")
+    parser.add_argument("--dataset", default=Path(__file__).resolve().parent / "data" / "price_dataset.csv")
     parser.add_argument("--category", required=True)
     parser.add_argument("--state", required=True)
     parser.add_argument("--city", required=True)

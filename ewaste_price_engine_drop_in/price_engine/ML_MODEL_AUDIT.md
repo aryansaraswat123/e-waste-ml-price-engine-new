@@ -9,9 +9,19 @@
 - Per-kg rows: 960
 - Per-piece rows: 156
 
+The 65 curated material baselines contain market-source URLs and observation dates:
+34 `DIRECT`, 24 `DIRECT_RANGE`, and 7 `PROXY` evidence rows. These are the
+source-backed inputs to the expanded price table, not 65 independently observed
+quotes for each location and date.
+
 ## Synthetic flag
 is_synthetic
 True    1116
+
+All 1,116 generated location/date/channel price rows are marked synthetic. The
+overall data provenance is hybrid: source-backed material baselines plus
+synthetically expanded pricing scenarios. Scores below describe the generated
+scenarios and must not be reported as verified real-market predictive accuracy.
 
 ## Modeling design
 - Models compared: Linear Regression, Random Forest, XGBoost

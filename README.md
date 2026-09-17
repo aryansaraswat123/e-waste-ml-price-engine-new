@@ -4,7 +4,7 @@ Drop-in pricing component for an e-waste image classification application. The t
 
 ## Run locally
 
-Use Python 3.10 or newer. From the repository root:
+Use Python 3.12 (the tested version). From the repository root:
 
 ```bash
 python -m venv .venv
@@ -15,7 +15,7 @@ python ewaste_price_engine_drop_in/restore_models.py
 python ewaste_price_engine_drop_in/test_drop_in_compatibility.py
 ```
 
-The restore command checks the bundle SHA-256 and extracts six model files into `price_engine/models/`; it is needed once per fresh clone. The test should print `DROP-IN COMPATIBILITY TESTS PASSED`. Keep the restored `models/`, `data/`, `model_metadata.json`, and `holdout_predictions.csv` files alongside the Python modules. Model files use `joblib`; load them only from this trusted repository. If a serialized model is incompatible with a newer dependency release, use a compatible version of scikit-learn/XGBoost or retrain and re-export it.
+The restore command checks the bundle SHA-256 and extracts six model files into `price_engine/models/`; it is needed once per fresh clone. The test should print `DROP-IN COMPATIBILITY TESTS PASSED`. Keep the restored `models/`, `data/`, `model_metadata.json`, and `holdout_predictions.csv` files alongside the Python modules. Model files use `joblib`; load them only from this trusted repository. The requirements pin the versions used to build/test these models: incompatible XGBoost versions can load a model but produce incorrect per-piece quotes. Use Python 3.12 for the tested setup.
 
 ## Connect the image classifier
 
@@ -45,4 +45,4 @@ For an existing application that imports `price_integration.py` directly, run th
 
 ## Data and evaluation limits
 
-The bundled audit reports **1,116 synthetic price rows** and 65 material rows. Its held-out-city scores measure performance on this synthetic dataset, not verified market accuracy. The stress-test report documents 36 failed checks out of 6,194 on the underlying model layer; the drop-in wrapper applies channel ordering, and its supplied compatibility test passes. Before giving real purchase prices, validate against real local quotes, update the dataset, retrain the models, and review out-of-distribution cases. See [model audit](ewaste_price_engine_drop_in/price_engine/ML_MODEL_AUDIT.md) and [stress test](ewaste_price_engine_drop_in/price_engine/STRESS_TEST_ML_REPORT.md).
+The pricing data is **hybrid in provenance**: 65 curated material baselines carry source URLs, observation dates, and evidence levels (34 `DIRECT`, 24 `DIRECT_RANGE`, 7 `PROXY`). The 1,116 location/date/channel price rows were expanded from those baselines and are all flagged `is_synthetic=True`; they are scenario estimates, not 1,116 independent market observations. Held-out-city scores therefore measure performance on expanded scenarios, not verified real-market accuracy. The stress-test report documents 36 failed checks out of 6,194 on the underlying model layer; the drop-in wrapper applies channel ordering, and its supplied compatibility test passes. Validate quotes against independent local transactions before production use, especially across dates or unseen locations. See [model audit](ewaste_price_engine_drop_in/price_engine/ML_MODEL_AUDIT.md) and [stress test](ewaste_price_engine_drop_in/price_engine/STRESS_TEST_ML_REPORT.md).

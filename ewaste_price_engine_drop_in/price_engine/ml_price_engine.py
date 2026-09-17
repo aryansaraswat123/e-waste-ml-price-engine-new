@@ -5,6 +5,7 @@ from pathlib import Path
 from difflib import get_close_matches
 from datetime import date
 import json
+import math
 import numpy as np
 import pandas as pd
 import joblib
@@ -65,8 +66,9 @@ class MLPriceEngine:
             for channel, cm in um["channels"].items():
                 self.models[unit][channel] = joblib.load(MODELS_DIR / cm["model_file"])
 
-        self.known_cities = {
-            str(x["location_city"]).strip().lower() for x in self.meta["city_tiers"]
+        self.known_locations = {
+            (str(x["location_state"]).strip().lower(), str(x["location_city"]).strip().lower())
+            for x in self.meta["city_tiers"]
         }
         self.known_states = {
             str(x["location_state"]).strip().lower() for x in self.meta["city_tiers"]
@@ -100,7 +102,7 @@ class MLPriceEngine:
         return "UNKNOWN"
 
     def _match_level(self, state, city):
-        if city.lower() in self.known_cities:
+        if (state.lower(), city.lower()) in self.known_locations:
             return "city"
         if state.lower() in self.known_states:
             return "state"
@@ -144,6 +146,8 @@ class MLPriceEngine:
 
         if channel not in CHANNELS:
             raise ValueError(f"channel must be one of {sorted(CHANNELS)}")
+        if not math.isfinite(float(quantity)) or not math.isfinite(float(total_weight_kg)):
+            raise ValueError("quantity and total_weight_kg must be finite numbers")
         if float(quantity) < 0 or float(total_weight_kg) < 0:
             raise ValueError("quantity and total_weight_kg cannot be negative")
 
@@ -192,9 +196,9 @@ class MLPriceEngine:
         warnings = []
         if self.meta.get("is_synthetic_counts", {}).get("True", 0):
             warnings.append(
-                "The supplied price table used to train this prototype is marked synthetic "
-                "in its own is_synthetic column. Replace/retrain with independently observed "
-                "historical transactions before claiming real-market predictive accuracy."
+                "This hybrid dataset has source-backed material baselines, but its training "
+                "price rows are synthetically expanded scenarios. Validate against independently "
+                "observed transactions before claiming real-market predictive accuracy."
             )
         match_level = self._match_level(state, city)
         if match_level != "city":
